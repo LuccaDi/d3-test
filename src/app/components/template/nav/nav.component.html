@@ -1,0 +1,40 @@
+<mat-sidenav-container class="container">
+  <mat-sidenav class="sidenav" mode="side" opened 
+    fixedInViewport="true" fixedTopGap="64">
+    <mat-nav-list class="nav-list">
+      <a mat-list-item routerLink="/bar">
+        <i class="material-icons">
+          bar_chart
+        </i>
+        Bar Chart
+      </a>
+      <a mat-list-item routerLink="/pie">
+        <i class="material-icons">
+          pie_chart
+        </i>
+        Pie Chart
+      </a>
+      <a mat-list-item routerLink="/scatter">
+        <i class="material-icons">
+          scatter_plot
+        </i>
+        Scatter Plot
+      </a>
+      <a mat-list-item routerLink="/scatterMatrix">
+        <i class="material-icons">
+          scatter_plot
+        </i>
+        Scatter Matrix
+      </a>
+      <a mat-list-item routerLink="/scatterZoom">
+        <i class="material-icons">
+          scatter_plot
+        </i>
+        Scatter Zoom
+      </a>
+    </mat-nav-list>
+  </mat-sidenav>
+  <mat-sidenav-content class="content">
+    <router-outlet></router-outlet>
+  </mat-sidenav-content>
+</mat-sidenav-container>
