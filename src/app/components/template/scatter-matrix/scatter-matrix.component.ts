@@ -19,13 +19,13 @@ export class ScatterMatrixComponent implements OnInit {
 
   private columns = 2;
   private rows = 2;
-  private numCharts = 3;
+  private numCharts = 4;
 
-  private eixosX = ['cRocha', 'cRocha', 'cRocha'];
-  private eixosY = ['nkrg1', 'nkrog1', 'nkrog1'];
+  private eixosX = ['cRocha', 'cRocha', 'cRocha', 'cRocha'];
+  private eixosY = ['nkrg1', 'nkrog1', 'nkrg1', 'nkrog1'];
 
-  private x: any;
-  private y: any;
+  private x: any = [];
+  private y: any = [];
 
   private size =
     (this.width - (this.columns + 1) * this.margin) / this.columns +
@@ -35,10 +35,8 @@ export class ScatterMatrixComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     this.data = await this.apiService.readScatterMatrix().toPromise();
-    console.log(this.data);
-    console.log(this.eixosX);
     this.drawPlot();
-    this.addDots(this.x, this.y);
+    this.addDots();
   }
 
   private drawPlot(): void {
@@ -73,15 +71,22 @@ export class ScatterMatrixComponent implements OnInit {
     //     .rangeRound([this.margin / 2, this.size - this.margin / 2]);
     // });
 
-    this.x = d3
-      .scaleLinear()
-      .domain([0, 10])
-      .rangeRound([this.margin / 2, this.size - this.margin / 2]);
+    // this.x = d3
+    //   .scaleLinear()
+    //   .domain([0, 10])
+    //   .rangeRound([this.margin / 2, this.size - this.margin / 2]);
 
-    const xAxis: any = d3
-      .axisBottom(this.x)
-      .ticks(12)
-      .tickSize(-this.size + this.margin);
+    for (let u = 0; u < this.eixosX.length; u++) {
+      this.x[u] = d3
+        .scaleLinear()
+        .domain([0, 10])
+        .rangeRound([this.margin / 2, this.size - this.margin / 2]);
+    }
+
+    // const xAxis: any = d3
+    //   .axisBottom(this.x)
+    //   .ticks(12)
+    //   .tickSize(-this.size + this.margin);
 
     //   const xAxis: any = () =>
     //   {
@@ -93,20 +98,28 @@ export class ScatterMatrixComponent implements OnInit {
     // }
 
     this.svg.append('g').attr('class', 'x-axis');
-    this.addX(xAxis);
+    // this.addX(xAxis);
+    this.addX();
 
-    this.y = d3
-      .scaleLinear()
-      .domain([0, 10])
-      .range([this.size - this.margin / 2, this.margin / 2]);
+    for (let u = 0; u < this.eixosY.length; u++) {
+      this.y[u] = d3
+        .scaleLinear()
+        .domain([0, 10])
+        .range([this.size - this.margin / 2, this.margin / 2]);
+    }
 
-    const yAxis: any = d3
-      .axisLeft(this.y)
-      .ticks(12)
-      .tickSize(-this.size + this.margin);
+    // this.y = d3
+    //   .scaleLinear()
+    //   .domain([0, 10])
+    //   .range([this.size - this.margin / 2, this.margin / 2]);
+
+    // const yAxis: any = d3
+    //   .axisLeft(this.y)
+    //   .ticks(12)
+    //   .tickSize(-this.size + this.margin);
 
     this.svg.append('g').attr('class', 'y-axis');
-    this.addY(yAxis);
+    this.addY();
 
     this.cell = this.svg
       .append('g')
@@ -154,17 +167,10 @@ export class ScatterMatrixComponent implements OnInit {
     //   .attr('y', (d: any) => y(d.nkrg1));
   }
 
-  private addDots(x: any, y: any): any {
+  private addDots(): any {
     const symbol = d3.symbol();
 
-    // let charts = 1;
-    // for (let i = 0; i < this.columns; i++) {
-    //   for (let j = 1; j <= this.rows; j++) {
-    //     if (charts > this.numCharts) {
-    //       return;
-    //     }
-
-    // this.cell.each(() => {
+    let cont = -1;
 
     this.cell
       .selectAll('path')
@@ -184,10 +190,19 @@ export class ScatterMatrixComponent implements OnInit {
           })
           .size(50)
       )
-      .attr(
-        'transform',
-        (d: any) => 'translate(' + (x(d.cRocha) + 0.5) + ',' + y(d.nkrg1) + ')'
-      )
+      .attr('transform', (d: any, i: any) => {
+        if (i == 0) {
+          cont++;
+        }
+
+        return (
+          'translate(' +
+          (this.x[cont](d[this.eixosX[cont]]) + 0.5) +
+          ',' +
+          this.y[cont](d[this.eixosY[cont]]) +
+          ')'
+        );
+      })
       .attr('fill', (d: any) => {
         if (d.predefined == true) {
           return 'red';
@@ -197,19 +212,43 @@ export class ScatterMatrixComponent implements OnInit {
           return 'blue';
         }
       });
-
-    //     charts++;
-    //   }
-    // }
-
-    // });
   }
 
-  private addX(xAxis: any) {
-    let charts = 1;
+  // private addX(xAxis: any) {
+  //   let charts = 1;
+  //   for (let i = 0; i < this.columns; i++) {
+  //     for (let j = 1; j <= this.rows; j++) {
+  //       if (charts > this.numCharts) {
+  //         return;
+  //       }
+  //       selectAll('.x-axis')
+  //         .append('g')
+  //         .attr(
+  //           'transform',
+  //           'translate(' +
+  //             i * this.size +
+  //             ',' +
+  //             (this.size * j - this.margin / 2) +
+  //             ')'
+  //         )
+  //         .call(xAxis);
+
+  //       charts++;
+  //     }
+  //   }
+  // }
+
+  private addX() {
+    let charts = 0;
+
+    const xAxis = d3
+      .axisBottom(this.x[charts])
+      .ticks(12)
+      .tickSize(-this.size + this.margin);
+
     for (let i = 0; i < this.columns; i++) {
       for (let j = 1; j <= this.rows; j++) {
-        if (charts > this.numCharts) {
+        if (charts >= this.numCharts) {
           return;
         }
         selectAll('.x-axis')
@@ -222,7 +261,9 @@ export class ScatterMatrixComponent implements OnInit {
               (this.size * j - this.margin / 2) +
               ')'
           )
-          .call(xAxis);
+          .call(xAxis)
+          .call((g) => g.select('.domain').remove())
+          .call((g) => g.selectAll('.tick line').attr('stroke', '#ddd'));
 
         charts++;
       }
@@ -260,9 +301,19 @@ export class ScatterMatrixComponent implements OnInit {
   //   }
   // }
 
-  private addY(yAxis: any) {
+  private addY() {
+    let charts = 0;
+
+    const yAxis: any = d3
+      .axisLeft(this.y[charts])
+      .ticks(12)
+      .tickSize(-this.size + this.margin);
+
     for (let i = 0; i < this.rows; i++) {
       for (let j = 0; j < this.columns; j++) {
+        if (charts >= this.numCharts) {
+          return;
+        }
         selectAll('.y-axis')
           .append('g')
           .attr(
@@ -273,8 +324,30 @@ export class ScatterMatrixComponent implements OnInit {
               i * this.size +
               ')'
           )
-          .call(yAxis);
+          .call(yAxis)
+          .call((g) => g.select('.domain').remove())
+          .call((g) => g.selectAll('.tick line').attr('stroke', '#ddd'));
+
+        charts++;
       }
     }
   }
+
+  // private addY(yAxis: any) {
+  //   for (let i = 0; i < this.rows; i++) {
+  //     for (let j = 0; j < this.columns; j++) {
+  //       selectAll('.y-axis')
+  //         .append('g')
+  //         .attr(
+  //           'transform',
+  //           'translate(' +
+  //             (this.margin / 2 + this.size * j) +
+  //             ',' +
+  //             i * this.size +
+  //             ')'
+  //         )
+  //         .call(yAxis);
+  //     }
+  //   }
+  // }
 }
