@@ -38,7 +38,7 @@ export class ScatterMatrixComponent implements OnInit {
   private tempGx: any;
   private tempGy: any;
 
-  private clip: any;
+  private def: any;
 
   private size =
     (this.width - (this.columns + 1) * this.margin) / this.columns +
@@ -93,22 +93,9 @@ export class ScatterMatrixComponent implements OnInit {
     this.tempGy = this.svg.append('g').attr('class', 'y-axis');
     this.addY();
 
-    this.clip = this.svg
-      .append('defs')
-      .append('clipPath')
-      .attr('id', 'clip')
-      .append('rect')
-      // .attr('id', 'clip-rect' + charts)
-      .attr(
-        'transform',
-        'translate(' + this.margin / 2 + ',' + this.margin / 2 + ')'
-      )
-      // .attr('x', i * this.size + this.margin / 2)
-      // .attr('y', j * this.size + this.margin / 2)
+    this.def = this.svg.append('defs');
 
-      .attr('width', this.size - this.margin)
-      .attr('height', this.size - this.margin);
-    // this.addClip();
+    this.addClip();
 
     this.graphs = this.svg.append('g').attr('class', 'graphs');
 
@@ -137,7 +124,7 @@ export class ScatterMatrixComponent implements OnInit {
     //   .attr('y', (d: any) => y(d.nkrg1));
   }
 
-  private zoomed = ({ transform }: any, id: string) => {
+  private zoomed = ({ transform }: any, id: number) => {
     const newXScale = transform
       .rescaleX(this.x)
       .interpolate(d3.interpolateRound);
@@ -166,45 +153,12 @@ export class ScatterMatrixComponent implements OnInit {
       .selectAll('.dot')
       .attr('d', this.symbol.size(50 / transform.k));
 
-    this.clip
-      // .select('#clip')
-      // .select('rect')
+    this.def
+      .select('#clip' + id)
+      .select('rect')
       .attr('transform', 'scale(' + 1 / transform.k + ')')
-      // .attr(
-      //   'transform',
-      //   'translate(' +
-      //     (this.margin + transform.x) +
-      //     ',' +
-      //     (this.margin - transform.y) +
-      //     ') scale(' +
-      //     1 / transform.k +
-      //     ')'
-      // );
-      // .attr('x', ([i]: any) => i * this.size - transform.x)
-      // .attr('y', ([j]: any) => j * this.size - transform.y)
-
       .attr('x', this.margin / 2 - transform.x)
       .attr('y', this.margin / 2 - transform.y);
-
-    // this.clip
-    //   .select('#clip' + id)
-    //   .select('rect')
-    //   .attr('transform', ([i, j]: any) => {
-    //     return (
-    //       'translate(' +
-    //       (i * this.size + transform.x) +
-    //       ',' +
-    //       (j * this.size + transform.y) +
-    //       ') scale(' +
-    //       1 / transform.k +
-    //       ')'
-    //     );
-    //   })
-    //   // .attr('x', ([i]: any) => i * this.size - transform.x)
-    //   // .attr('y', ([j]: any) => j * this.size - transform.y)
-
-    //   .attr('x', this.margin / 2 - transform.x)
-    //   .attr('y', this.margin / 2 - transform.y);
   };
 
   private addClip() {
@@ -216,32 +170,14 @@ export class ScatterMatrixComponent implements OnInit {
           return;
         }
 
-        this.clip
+        this.def
           .append('clipPath')
           .attr('id', 'clip' + charts)
           .append('rect')
-          // .attr('id', 'clip-rect' + charts)
-          .attr(
-            'transform',
-            'translate(' +
-              (i * this.size + this.margin / 2) +
-              ',' +
-              (j * this.size + this.margin / 2) +
-              ')'
-          )
-          // .attr('x', i * this.size + this.margin / 2)
-          // .attr('y', j * this.size + this.margin / 2)
-
+          .attr('x', this.margin / 2)
+          .attr('y', this.margin / 2)
           .attr('width', this.size - this.margin)
           .attr('height', this.size - this.margin);
-        // .attr(
-        //   'transform',
-        //   'translate(' +
-        //     i * this.size +
-        //     ',' +
-        //     (this.size * j - this.margin / 2) +
-        //     ')'
-        // );
 
         charts++;
       }
@@ -251,7 +187,7 @@ export class ScatterMatrixComponent implements OnInit {
   private addRect() {
     let i = 0;
 
-    let id = '';
+    let id: number;
 
     const zoom: any = d3
       .zoom()
@@ -292,16 +228,12 @@ export class ScatterMatrixComponent implements OnInit {
   private addDots() {
     let cont = -1;
     let g = 0;
-    let c = -1;
+    let c = 0;
 
     this.graphs
       .selectAll('g')
       .attr('class', () => 'graph' + g++)
-      .attr('clip-path', 'url(#clip)')
-      // .attr('clip-path', () => {
-      //   // c++;
-      //   return `url(#clip${c++})`;
-      // })
+      .attr('clip-path', () => `url(#clip${c++})`)
       .selectAll('path')
       .data(this.data)
       .join('path')
