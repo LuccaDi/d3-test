@@ -1,6 +1,8 @@
+import { FocusMonitorDetectionMode } from '@angular/cdk/a11y';
+import { THIS_EXPR } from '@angular/compiler/src/output/output_ast';
 import { Component, OnInit } from '@angular/core';
 import * as d3 from 'd3';
-import { csvParseRows, selectAll } from 'd3';
+import { csvParseRows, selectAll, svg, zoom } from 'd3';
 import { ScatterMatrix } from '../../model/scatterMatrix.model';
 import { ApiService } from '../../service/api.service';
 
@@ -12,10 +14,13 @@ import { ApiService } from '../../service/api.service';
 export class ScatterMatrixComponent implements OnInit {
   private data: ScatterMatrix[] = [];
   private svg: any;
-  private cell: any;
+  private graphs: any;
+  private rects: any;
   private margin = 40;
   private width = 800 - this.margin * 2;
   private height = 800 - this.margin * 2;
+
+  private symbol = d3.symbol();
 
   private columns = 2;
   private rows = 2;
@@ -24,8 +29,16 @@ export class ScatterMatrixComponent implements OnInit {
   private eixosX = ['cRocha', 'cRocha', 'cRocha', 'cRocha'];
   private eixosY = ['nkrg1', 'nkrog1', 'nkrg1', 'nkrog1'];
 
-  private x: any = [];
-  private y: any = [];
+  private x: any;
+  private y: any;
+
+  private xAxis: any;
+  private yAxis: any;
+
+  private tempGx: any;
+  private tempGy: any;
+
+  private clip: any;
 
   private size =
     (this.width - (this.columns + 1) * this.margin) / this.columns +
@@ -35,21 +48,13 @@ export class ScatterMatrixComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     this.data = await this.apiService.readScatterMatrix().toPromise();
+
     this.drawPlot();
     this.addDots();
   }
 
   private drawPlot(): void {
     // const symbol = d3.symbol();
-
-    // const zoom: any = d3
-    //   .zoom()
-    //   .scaleExtent([0.5, 5])
-    //   .translateExtent([
-    //     [0, 0],
-    //     [this.width, this.height],
-    //   ])
-    //   .on('zoom', zoomed);
 
     this.svg = d3
       .select('figure#scatterMatrix')
@@ -61,69 +66,55 @@ export class ScatterMatrixComponent implements OnInit {
       .attr('class', 'content');
     // .call(zoom);
 
-    // svg.append('rect').attr('width', this.width).attr('height', this.height);
+    this.x = d3
+      .scaleLinear()
+      .domain([0, 10])
+      .rangeRound([this.margin / 2, this.size - this.margin / 2]);
 
-    // const x: any = this.eixosX.map((c: any) => {
-    //   const extent: any = d3.extent(this.data, (d: any) => d[c]);
-    //   console.log(extent);
-    //   d3.scaleLinear()
-    //     .domain(extent)
-    //     .rangeRound([this.margin / 2, this.size - this.margin / 2]);
-    // });
+    this.xAxis = d3
+      .axisBottom(this.x)
+      .ticks(12)
+      .tickSize(-this.size + this.margin);
 
-    // this.x = d3
-    //   .scaleLinear()
-    //   .domain([0, 10])
-    //   .rangeRound([this.margin / 2, this.size - this.margin / 2]);
+    this.tempGx = this.svg.append('g').attr('class', 'x-axis');
 
-    for (let u = 0; u < this.eixosX.length; u++) {
-      this.x[u] = d3
-        .scaleLinear()
-        .domain([0, 10])
-        .rangeRound([this.margin / 2, this.size - this.margin / 2]);
-    }
-
-    // const xAxis: any = d3
-    //   .axisBottom(this.x)
-    //   .ticks(12)
-    //   .tickSize(-this.size + this.margin);
-
-    //   const xAxis: any = () =>
-    //   {
-    //     const axis: any =
-    //     d3
-    //     .axisBottom()
-    //     .ticks(12)
-    //     .tickSize(-this.size + this.margin);
-    // }
-
-    this.svg.append('g').attr('class', 'x-axis');
-    // this.addX(xAxis);
     this.addX();
 
-    for (let u = 0; u < this.eixosY.length; u++) {
-      this.y[u] = d3
-        .scaleLinear()
-        .domain([0, 10])
-        .range([this.size - this.margin / 2, this.margin / 2]);
-    }
+    this.y = d3
+      .scaleLinear()
+      .domain([0, 10])
+      .range([this.size - this.margin / 2, this.margin / 2]);
 
-    // this.y = d3
-    //   .scaleLinear()
-    //   .domain([0, 10])
-    //   .range([this.size - this.margin / 2, this.margin / 2]);
+    this.yAxis = d3
+      .axisLeft(this.y)
+      .ticks(12)
+      .tickSize(-this.size + this.margin);
 
-    // const yAxis: any = d3
-    //   .axisLeft(this.y)
-    //   .ticks(12)
-    //   .tickSize(-this.size + this.margin);
-
-    this.svg.append('g').attr('class', 'y-axis');
+    this.tempGy = this.svg.append('g').attr('class', 'y-axis');
     this.addY();
 
-    this.cell = this.svg
-      .append('g')
-      .attr('class', 'cell')
+    this.clip = this.svg
+      .append('defs')
+      .append('clipPath')
+      .attr('id', 'clip')
+      .append('rect')
+      // .attr('id', 'clip-rect' + charts)
+      .attr(
+        'transform',
+        'translate(' + this.margin / 2 + ',' + this.margin / 2 + ')'
+      )
+      // .attr('x', i * this.size + this.margin / 2)
+      // .attr('y', j * this.size + this.margin / 2)
+
+      .attr('width', this.size - this.margin)
+      .attr('height', this.size - this.margin);
+    // this.addClip();
+
+    this.graphs = this.svg.append('g').attr('class', 'graphs');
+
+    this.rects = this.svg.append('g').attr('class', 'rects');
+
+    this.graphs
       .selectAll('g')
       .data(d3.cross(d3.range(this.columns), d3.range(this.rows)))
       .join('g')
@@ -133,28 +124,7 @@ export class ScatterMatrixComponent implements OnInit {
           'translate(' + i * this.size + ',' + j * this.size + ')'
       );
 
-    this.cell
-      .append('rect')
-      .attr('fill', 'none')
-      .attr('stroke', '#aaa')
-      .attr('x', this.margin / 2)
-      .attr('y', this.margin / 2)
-      .attr('width', this.size - this.margin)
-      .attr('height', this.size - this.margin);
-
-    // this.addDots(x, y);
-
-    // function zoomed({ transform }: any) {
-    //   // const zoomState = zoomTransform(svg.node());
-    //   const newXScale = transform.rescaleX(x).interpolate(d3.interpolateRound);
-    //   const newYScale = transform.rescaleY(y).interpolate(d3.interpolateRound);
-    //   createX.call(xAxis.scale(newXScale));
-    //   createY.call(yAxis.scale(newYScale));
-
-    //   dots.attr('transform', transform);
-
-    //   selectAll('.dot').attr('d', symbol.size(100 / transform.k));
-    // }
+    this.addRect();
 
     // Add labels
     // dots
@@ -167,18 +137,178 @@ export class ScatterMatrixComponent implements OnInit {
     //   .attr('y', (d: any) => y(d.nkrg1));
   }
 
-  private addDots(): any {
-    const symbol = d3.symbol();
+  private zoomed = ({ transform }: any, id: string) => {
+    const newXScale = transform
+      .rescaleX(this.x)
+      .interpolate(d3.interpolateRound);
+    const newYScale = transform
+      .rescaleY(this.y)
+      .interpolate(d3.interpolateRound);
 
+    this.tempGx.select('.x' + id).call(this.xAxis.scale(newXScale));
+    this.tempGy.select('.y' + id).call(this.yAxis.scale(newYScale));
+
+    this.graphs.select('.graph' + id).attr('transform', ([i, j]: any) => {
+      console.log('i: ' + i);
+      console.log('j: ' + j);
+      return (
+        'translate(' +
+        (i * this.size + transform.x) +
+        ',' +
+        (j * this.size + transform.y) +
+        ') scale(' +
+        transform.k +
+        ')'
+      );
+    });
+
+    d3.select('.graph' + id)
+      .selectAll('.dot')
+      .attr('d', this.symbol.size(50 / transform.k));
+
+    this.clip
+      // .select('#clip')
+      // .select('rect')
+      .attr('transform', 'scale(' + 1 / transform.k + ')')
+      // .attr(
+      //   'transform',
+      //   'translate(' +
+      //     (this.margin + transform.x) +
+      //     ',' +
+      //     (this.margin - transform.y) +
+      //     ') scale(' +
+      //     1 / transform.k +
+      //     ')'
+      // );
+      // .attr('x', ([i]: any) => i * this.size - transform.x)
+      // .attr('y', ([j]: any) => j * this.size - transform.y)
+
+      .attr('x', this.margin / 2 - transform.x)
+      .attr('y', this.margin / 2 - transform.y);
+
+    // this.clip
+    //   .select('#clip' + id)
+    //   .select('rect')
+    //   .attr('transform', ([i, j]: any) => {
+    //     return (
+    //       'translate(' +
+    //       (i * this.size + transform.x) +
+    //       ',' +
+    //       (j * this.size + transform.y) +
+    //       ') scale(' +
+    //       1 / transform.k +
+    //       ')'
+    //     );
+    //   })
+    //   // .attr('x', ([i]: any) => i * this.size - transform.x)
+    //   // .attr('y', ([j]: any) => j * this.size - transform.y)
+
+    //   .attr('x', this.margin / 2 - transform.x)
+    //   .attr('y', this.margin / 2 - transform.y);
+  };
+
+  private addClip() {
+    let charts = 0;
+
+    for (let i = 0; i < this.columns; i++) {
+      for (let j = 0; j < this.rows; j++) {
+        if (charts >= this.numCharts) {
+          return;
+        }
+
+        this.clip
+          .append('clipPath')
+          .attr('id', 'clip' + charts)
+          .append('rect')
+          // .attr('id', 'clip-rect' + charts)
+          .attr(
+            'transform',
+            'translate(' +
+              (i * this.size + this.margin / 2) +
+              ',' +
+              (j * this.size + this.margin / 2) +
+              ')'
+          )
+          // .attr('x', i * this.size + this.margin / 2)
+          // .attr('y', j * this.size + this.margin / 2)
+
+          .attr('width', this.size - this.margin)
+          .attr('height', this.size - this.margin);
+        // .attr(
+        //   'transform',
+        //   'translate(' +
+        //     i * this.size +
+        //     ',' +
+        //     (this.size * j - this.margin / 2) +
+        //     ')'
+        // );
+
+        charts++;
+      }
+    }
+  }
+
+  private addRect() {
+    let i = 0;
+
+    let id = '';
+
+    const zoom: any = d3
+      .zoom()
+      .scaleExtent([0.5, 5])
+      .translateExtent([
+        [0, 0],
+        [this.width, this.height],
+      ])
+      .on('zoom', (transform) => this.zoomed(transform, id));
+
+    this.rects
+      .selectAll('rect')
+      .data(d3.cross(d3.range(this.columns), d3.range(this.rows)))
+      .join('rect')
+      .attr(
+        'transform',
+        ([i, j]: any) =>
+          'translate(' + i * this.size + ',' + j * this.size + ')'
+      )
+      .attr('fill', '#FFFFFF')
+      .attr('fill-opacity', '0.0')
+      .attr('stroke', '#aaa')
+      .attr('x', this.margin / 2)
+      .attr('y', this.margin / 2)
+      .attr('width', this.size - this.margin)
+      .attr('height', this.size - this.margin)
+      .attr('id', () => i++)
+      // .call(zoom);
+      .on('mouseover', function (d: any) {
+        id = d.srcElement.id;
+      })
+      // .on('wheel', function (d: any) {
+      //   id = d.srcElement.id;
+      // })
+      .call(zoom);
+  }
+
+  private addDots() {
     let cont = -1;
+    let g = 0;
+    let c = -1;
 
-    this.cell
+    this.graphs
+      .selectAll('g')
+      .attr('class', () => 'graph' + g++)
+      .attr('clip-path', 'url(#clip)')
+      // .attr('clip-path', () => {
+      //   // c++;
+      //   return `url(#clip${c++})`;
+      // })
       .selectAll('path')
       .data(this.data)
       .join('path')
+      .attr('class', 'dot')
       .attr(
         'd',
-        symbol
+        this.symbol
           .type((d: any) => {
             if (d.predefined == true) {
               return d3.symbolSquare;
@@ -197,9 +327,9 @@ export class ScatterMatrixComponent implements OnInit {
 
         return (
           'translate(' +
-          (this.x[cont](d[this.eixosX[cont]]) + 0.5) +
+          (this.x(d[this.eixosX[cont]]) + 0.5) +
           ',' +
-          this.y[cont](d[this.eixosY[cont]]) +
+          this.y(d[this.eixosY[cont]]) +
           ')'
         );
       })
@@ -214,45 +344,18 @@ export class ScatterMatrixComponent implements OnInit {
       });
   }
 
-  // private addX(xAxis: any) {
-  //   let charts = 1;
-  //   for (let i = 0; i < this.columns; i++) {
-  //     for (let j = 1; j <= this.rows; j++) {
-  //       if (charts > this.numCharts) {
-  //         return;
-  //       }
-  //       selectAll('.x-axis')
-  //         .append('g')
-  //         .attr(
-  //           'transform',
-  //           'translate(' +
-  //             i * this.size +
-  //             ',' +
-  //             (this.size * j - this.margin / 2) +
-  //             ')'
-  //         )
-  //         .call(xAxis);
-
-  //       charts++;
-  //     }
-  //   }
-  // }
-
   private addX() {
     let charts = 0;
-
-    const xAxis = d3
-      .axisBottom(this.x[charts])
-      .ticks(12)
-      .tickSize(-this.size + this.margin);
 
     for (let i = 0; i < this.columns; i++) {
       for (let j = 1; j <= this.rows; j++) {
         if (charts >= this.numCharts) {
           return;
         }
-        selectAll('.x-axis')
+        // selectAll('.x-axis')
+        this.tempGx
           .append('g')
+          .attr('class', 'x' + charts)
           .attr(
             'transform',
             'translate(' +
@@ -261,93 +364,41 @@ export class ScatterMatrixComponent implements OnInit {
               (this.size * j - this.margin / 2) +
               ')'
           )
-          .call(xAxis)
-          .call((g) => g.select('.domain').remove())
-          .call((g) => g.selectAll('.tick line').attr('stroke', '#ddd'));
+          .call(this.xAxis);
+        // .call((g) => g.select('.domain').remove())
+        // .call((g) => g.selectAll('.tick line').attr('stroke', '#ddd'));
 
         charts++;
       }
     }
   }
-
-  // private addX(x: any) {
-  //   let charts = 1;
-  //   for (let i = 0; i < this.columns; i++) {
-  //     for (let j = 1; j <= this.rows; j++) {
-  //       // if (charts > this.numCharts) {
-  //       //   return;
-  //       // }
-  //       selectAll('.x-axis')
-  //         .data(x)
-  //         .append('g')
-  //         .attr(
-  //           'transform',
-  //           'translate(' +
-  //             i * this.size +
-  //             ',' +
-  //             (this.size * j - this.margin / 2) +
-  //             ')'
-  //         )
-  //         .each(function (d: any) {
-  //           // return d3.select(this).call(xAxis.scale(d));
-  //           d3.axisBottom(d)
-  //           .ticks(12)
-  //           .tickSize(-340 + 20);
-  //         });
-  //       // .call(xAxis.scale((d: any) => d));
-
-  //       // charts++;
-  //     }
-  //   }
-  // }
 
   private addY() {
     let charts = 0;
 
-    const yAxis: any = d3
-      .axisLeft(this.y[charts])
-      .ticks(12)
-      .tickSize(-this.size + this.margin);
-
-    for (let i = 0; i < this.rows; i++) {
-      for (let j = 0; j < this.columns; j++) {
+    for (let i = 0; i < this.columns; i++) {
+      for (let j = 0; j < this.rows; j++) {
         if (charts >= this.numCharts) {
           return;
         }
-        selectAll('.y-axis')
+        // selectAll('.y-axis')
+        this.tempGy
           .append('g')
+          .attr('class', 'y' + charts)
           .attr(
             'transform',
             'translate(' +
-              (this.margin / 2 + this.size * j) +
+              (this.margin / 2 + this.size * i) +
               ',' +
-              i * this.size +
+              j * this.size +
               ')'
           )
-          .call(yAxis)
-          .call((g) => g.select('.domain').remove())
-          .call((g) => g.selectAll('.tick line').attr('stroke', '#ddd'));
+          .call(this.yAxis);
+        // .call((g) => g.select('.domain').remove())
+        // .call((g) => g.selectAll('.tick line').attr('stroke', '#ddd'));
 
         charts++;
       }
     }
   }
-
-  // private addY(yAxis: any) {
-  //   for (let i = 0; i < this.rows; i++) {
-  //     for (let j = 0; j < this.columns; j++) {
-  //       selectAll('.y-axis')
-  //         .append('g')
-  //         .attr(
-  //           'transform',
-  //           'translate(' +
-  //             (this.margin / 2 + this.size * j) +
-  //             ',' +
-  //             i * this.size +
-  //             ')'
-  //         )
-  //         .call(yAxis);
-  //     }
-  //   }
-  // }
 }

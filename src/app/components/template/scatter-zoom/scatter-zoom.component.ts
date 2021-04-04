@@ -55,7 +55,11 @@ export class ScatterZoomComponent implements OnInit {
       .attr('class', 'content')
       .call(zoom);
 
-    svg.append('rect').attr('width', this.width).attr('height', this.height);
+    svg
+      .append('rect')
+      .attr('width', this.width)
+      .attr('height', this.height)
+      .attr('fill', '#044B9466');
 
     // Add X axis
     const x = d3.scaleLinear().domain([-5, 10]).range([0, this.width]);
@@ -77,10 +81,27 @@ export class ScatterZoomComponent implements OnInit {
 
     const createY = svg.append('g').attr('class', 'y-axis').call(yAxis);
 
+    const clip = svg
+      .append('defs')
+      .append('clipPath')
+      .attr('id', 'clip')
+      .append('rect')
+      .attr('id', 'clip-rect')
+      .attr('x', '0')
+      .attr('y', '0')
+      .attr('width', this.width)
+      .attr('height', this.height);
+
     // svg.call(zoom);
 
+    var clip_orig_x = 0,
+      clip_orig_y = 0;
     function zoomed({ transform }: any) {
       // const zoomState = zoomTransform(svg.node());
+      let panX = transform.x;
+      let panY = transform.y;
+      let scale = transform.k;
+
       const newXScale = transform.rescaleX(x).interpolate(d3.interpolateRound);
       const newYScale = transform.rescaleY(y).interpolate(d3.interpolateRound);
       createX.call(xAxis.scale(newXScale));
@@ -89,25 +110,71 @@ export class ScatterZoomComponent implements OnInit {
       dots.attr('transform', transform);
 
       selectAll('.dot').attr('d', symbol.size(100 / transform.k));
+
+      clip
+        .attr('transform', 'scale(' + 1 / scale + ')')
+        .attr('x', clip_orig_x - panX)
+        .attr('y', clip_orig_y - panY);
     }
 
-    // const clip = svg
+    // d3.select('svg')
     //   .append('defs')
     //   .append('clipPath')
     //   .attr('id', 'clip')
     //   .append('rect')
-    //   .attr('id', 'clip-rect')
-    //   .attr('x', '0')
-    //   .attr('y', '0')
     //   .attr('width', this.width)
     //   .attr('height', this.height);
 
     // Add dots
     const symbol = d3.symbol();
 
-    const dots = svg.append('g');
+    const dots = svg
+      .append('g')
+      .attr('class', 'DOTS')
+      .attr('clip-path', 'url(#clip)');
+    // dots
+    //   // .attr('clip-path', 'url(#clip)')
+    //   .selectAll('path')
+    //   .data(this.data)
+    //   .join('path')
+    //   .attr('class', 'dot')
+    //   .attr(
+    //     'd',
+    //     symbol
+    //       .type((d: any) => {
+    //         if (d.predefined == true) {
+    //           return d3.symbolSquare;
+    //         } else if (d.rm == true) {
+    //           return d3.symbolDiamond;
+    //         } else {
+    //           return d3.symbolCircle;
+    //         }
+    //       })
+    //       .size(100)
+    //   )
+    //   .attr(
+    //     'transform',
+    //     (d: any) => 'translate(' + x(d.cRocha) + ',' + y(d.nkrg1) + ')'
+    //   )
+    //   .attr('fill', (d: any) => {
+    //     if (d.predefined == true) {
+    //       return 'red';
+    //     } else if (d.rm == true) {
+    //       return 'green';
+    //     } else {
+    //       return 'blue';
+    //     }
+    //   });
+
     dots
-      // .attr('clip-path', 'url(#clip)')
+      // .selectAll('circle')
+      // .data(this.data)
+      // .enter()
+      // .append('circle')
+      // .attr('cx', (d) => x(d.cRocha))
+      // .attr('cy', (d) => y(d.nkrg1))
+      // .attr('r', 5);
+
       .selectAll('path')
       .data(this.data)
       .join('path')
