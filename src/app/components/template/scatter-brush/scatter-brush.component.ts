@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import * as d3 from 'd3';
+import { select } from 'd3';
 import { ScatterBrush } from '../../model/scatterBrush.model';
 import { ApiService } from '../../service/api.service';
 
@@ -28,6 +29,9 @@ export class ScatterBrushComponent implements OnInit {
 
   private x: any;
   private y: any;
+
+  private newXScale: any;
+  private newYScale: any;
 
   private xAxis: any;
   private yAxis: any;
@@ -73,6 +77,8 @@ export class ScatterBrushComponent implements OnInit {
       .ticks(12)
       .tickSize(-this.size + this.margin);
 
+    this.newXScale = this.x;
+
     this.tempGx = this.svg.append('g').attr('class', 'x-axis');
 
     this.addX();
@@ -87,6 +93,8 @@ export class ScatterBrushComponent implements OnInit {
       .ticks(12)
       .tickSize(-this.size + this.margin);
 
+    this.newYScale = this.y;
+
     this.tempGy = this.svg.append('g').attr('class', 'y-axis');
     this.addY();
 
@@ -94,9 +102,9 @@ export class ScatterBrushComponent implements OnInit {
 
     this.addClip();
 
-    this.graphs = this.svg.append('g').attr('class', 'graphs');
-
     this.rects = this.svg.append('g').attr('class', 'rects');
+
+    this.graphs = this.svg.append('g').attr('class', 'graphs');
 
     this.graphs
       .selectAll('g')
@@ -122,19 +130,19 @@ export class ScatterBrushComponent implements OnInit {
   }
 
   private zoomed = ({ transform }: any, id: number) => {
-    const newXScale = transform
+    this.newXScale = transform
       .rescaleX(this.x)
       .interpolate(d3.interpolateRound);
-    const newYScale = transform
+    this.newYScale = transform
       .rescaleY(this.y)
       .interpolate(d3.interpolateRound);
 
-    this.tempGx.select('.x' + id).call(this.xAxis.scale(newXScale));
-    this.tempGy.select('.y' + id).call(this.yAxis.scale(newYScale));
+    this.tempGx.select('.x' + id).call(this.xAxis.scale(this.newXScale));
+    this.tempGy.select('.y' + id).call(this.yAxis.scale(this.newYScale));
 
-    this.graphs.select('.graph' + id).attr('transform', ([i, j]: any) => {
-      console.log('i: ' + i);
-      console.log('j: ' + j);
+    // console.log(newXScale.domain()[0]);
+
+    this.graphs.select('#graph' + id).attr('transform', ([i, j]: any) => {
       return (
         'translate(' +
         (i * this.size + transform.x) +
@@ -146,7 +154,7 @@ export class ScatterBrushComponent implements OnInit {
       );
     });
 
-    d3.select('.graph' + id)
+    d3.select('#graph' + id)
       .selectAll('.dot')
       .attr('d', this.symbol.size(50 / transform.k));
 
@@ -156,6 +164,18 @@ export class ScatterBrushComponent implements OnInit {
       .attr('transform', 'scale(' + 1 / transform.k + ')')
       .attr('x', this.margin / 2 - transform.x)
       .attr('y', this.margin / 2 - transform.y);
+
+    d3.select('#graph' + id)
+      .select('#x')
+      .style('stroke-width', 1 / transform.k)
+      .attr('y1', (this.size - this.margin / 2 - transform.y) / transform.k) // y position of the first end of the line
+      .attr('y2', (this.margin / 2 - transform.y) / transform.k); // y position of the second end of the line
+
+    d3.select('#graph' + id)
+      .select('#y')
+      .style('stroke-width', 1 / transform.k)
+      .attr('x1', (this.margin / 2 - transform.x) / transform.k) // y position of the first end of the line
+      .attr('x2', (this.size - this.margin / 2 - transform.x) / transform.k); // y position of the second end of the line
   };
 
   private addClip() {
@@ -189,10 +209,10 @@ export class ScatterBrushComponent implements OnInit {
     const zoom: any = d3
       .zoom()
       .scaleExtent([0.5, 5])
-      .translateExtent([
-        [0, 0],
-        [this.width, this.height],
-      ])
+      // .translateExtent([
+      //   [0, 0],
+      //   [this.width, this.height],
+      // ])
       .on('zoom', (transform) => this.zoomed(transform, id));
 
     this.rects
@@ -216,6 +236,10 @@ export class ScatterBrushComponent implements OnInit {
       .on('mouseover', function (d: any) {
         id = d.srcElement.id;
       })
+      // .on('click', function (d: any) {
+
+      //   console.log(d);
+      // })
       // .on('wheel', function (d: any) {
       //   id = d.srcElement.id;
       // })
@@ -226,14 +250,24 @@ export class ScatterBrushComponent implements OnInit {
     let cont = -1;
     let g = 0;
     let c = 0;
+    let nameX = 0;
+    let nameY = 0;
+
+    let contador = 0;
+
+    let style;
+    let matrix;
 
     this.graphs
       .selectAll('g')
-      .attr('class', () => 'graph' + g++)
+      .attr('id', () => 'graph' + g++)
       .attr('clip-path', () => `url(#clip${c++})`)
+      .attr('nameX', () => this.eixosX[nameX++])
+      .attr('nameY', () => this.eixosY[nameY++])
       .selectAll('path')
       .data(this.data)
       .join('path')
+      .attr('id', (d: any) => d.id)
       .attr('class', 'dot')
       .attr(
         'd',
@@ -256,7 +290,7 @@ export class ScatterBrushComponent implements OnInit {
 
         return (
           'translate(' +
-          (this.x(d[this.eixosX[cont]]) + 0.5) +
+          this.x(d[this.eixosX[cont]]) +
           ',' +
           this.y(d[this.eixosY[cont]]) +
           ')'
@@ -270,6 +304,83 @@ export class ScatterBrushComponent implements OnInit {
         } else {
           return 'blue';
         }
+      })
+      .on('click', (d: any) => {
+        let graphSelectX = 0;
+        let graphSelectY = 0;
+
+        let x;
+        let y;
+        let rg = d.srcElement.attributes.id.value;
+
+        this.data.map((dada: any) => {
+          if (dada.id == rg) {
+            this.graphs
+              // .select('#' + d.path[1].id)
+              .selectAll('g')
+              .selectAll('line')
+              .remove();
+
+            this.graphs
+              // .select('#' + d.path[1].id)
+              .selectAll('g')
+              .append('line')
+              .attr('id', 'x')
+              .style('stroke', 'red') // colour the line
+              .style('stroke-width', 1)
+              .style('stroke-linejoin', 'round')
+              .style('stroke-linecap', 'round')
+              .attr('x1', () => {
+                x = this.graphs.select(`#graph${graphSelectX++}`)[
+                  '_groups'
+                ][0][0].attributes.nameX.value;
+
+                return this.x(dada[x]);
+              }) // x position of the first end of the line
+              .attr('y1', this.y(this.newYScale.domain()[0])) // y position of the first end of the line
+              .attr('x2', () => {
+                if (graphSelectX >= this.numCharts) {
+                  graphSelectX = 0;
+                }
+
+                x = this.graphs.select(`#graph${graphSelectX++}`)[
+                  '_groups'
+                ][0][0].attributes.nameX.value;
+
+                return this.x(dada[x]);
+              }) // x position of the second end of the line
+              .attr('y2', this.y(this.newYScale.domain()[1])); // y position of the second end of the line
+
+            this.graphs
+              // .select('#' + d.path[1].id)
+              .selectAll('g')
+              .append('line')
+              .attr('id', 'y')
+              .style('stroke', 'red') // colour the line
+              .style('stroke-width', 1)
+              .style('stroke-linejoin', 'round')
+              .style('stroke-linecap', 'round')
+              .attr('x1', this.x(this.newXScale.domain()[0])) // x position of the first end of the line
+              .attr('y1', () => {
+                y = this.graphs.select(`#graph${graphSelectY++}`)[
+                  '_groups'
+                ][0][0].attributes.nameY.value;
+
+                return this.y(dada[y]);
+              }) // y position of the first end of the line
+              .attr('x2', this.x(this.newXScale.domain()[1])) // x position of the second end of the line
+              .attr('y2', () => {
+                if (graphSelectY >= this.numCharts) {
+                  graphSelectY = 0;
+                }
+                y = this.graphs.select(`#graph${graphSelectY++}`)[
+                  '_groups'
+                ][0][0].attributes.nameY.value;
+
+                return this.y(dada[y]);
+              }); // y position of the second end of the line
+          }
+        });
       });
   }
 
