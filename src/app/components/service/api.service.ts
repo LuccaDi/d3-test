@@ -6,6 +6,7 @@ import { ScatterMatrix } from '../model/scatterMatrix.model';
 import { ScatterZoom } from '../model/scatterZoom.model';
 import { Scatter } from '../model/scatterPlot.model';
 import { ScatterBrush } from '../model/scatterBrush.model';
+import { RiskCurveBrush } from '../model/riskCurveBrush.model';
 
 @Injectable({
   providedIn: 'root',
@@ -28,6 +29,9 @@ export class ApiService {
   scatterBrushURL =
     'https://run.mocky.io/v3/c6bef917-48a1-48d9-9565-5c0fea538d43';
 
+  riskCurveBrushURL =
+    'https://run.mocky.io/v3/c6bef917-48a1-48d9-9565-5c0fea538d43';
+
   constructor(private http: HttpClient) {}
 
   read(): Observable<Chart[]> {
@@ -48,5 +52,9 @@ export class ApiService {
 
   readScatterBrush(): Observable<ScatterBrush[]> {
     return this.http.get<ScatterBrush[]>(this.scatterBrushURL);
+  }
+
+  readRiskCurveBrush(): Observable<RiskCurveBrush[]> {
+    return this.http.get<RiskCurveBrush[]>(this.riskCurveBrushURL);
   }
 }

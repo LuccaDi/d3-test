@@ -1,16 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import * as d3 from 'd3';
-import { select } from 'd3';
-import { ScatterBrush } from '../../model/scatterBrush.model';
+import { RiskCurveBrush } from '../../model/riskCurveBrush.model';
 import { ApiService } from '../../service/api.service';
 
 @Component({
-  selector: 'app-scatter-brush',
-  templateUrl: './scatter-brush.component.html',
-  styleUrls: ['./scatter-brush.component.css'],
+  selector: 'app-risk-curve-brush',
+  templateUrl: './risk-curve-brush.component.html',
+  styleUrls: ['./risk-curve-brush.component.css'],
 })
-export class ScatterBrushComponent implements OnInit {
-  private data: ScatterBrush[] = [];
+export class RiskCurveBrushComponent implements OnInit {
+  private data: RiskCurveBrush[] = [];
   private svg: any;
   private graphs: any;
   private rects: any;
@@ -48,7 +47,7 @@ export class ScatterBrushComponent implements OnInit {
   constructor(private apiService: ApiService) {}
 
   async ngOnInit(): Promise<void> {
-    this.data = await this.apiService.readScatterBrush().toPromise();
+    this.data = await this.apiService.readRiskCurveBrush().toPromise();
 
     this.drawPlot();
     this.addDots();
@@ -58,7 +57,7 @@ export class ScatterBrushComponent implements OnInit {
     // const symbol = d3.symbol();
 
     this.svg = d3
-      .select('figure#scatterBrush')
+      .select('figure#riskCurveBrush')
       .append('svg')
       .attr('width', this.width + this.margin * 2)
       .attr('height', this.height + this.margin * 2)

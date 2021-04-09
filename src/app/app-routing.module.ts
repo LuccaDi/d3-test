@@ -7,6 +7,7 @@ import { ScatterPlotComponent } from './components/template/scatter-plot/scatter
 import { ScatterMatrixComponent } from './components/template/scatter-matrix/scatter-matrix.component';
 import { ScatterZoomComponent } from './components/template/scatter-zoom/scatter-zoom.component';
 import { ScatterBrushComponent } from './components/template/scatter-brush/scatter-brush.component';
+import { RiskCurveBrushComponent } from './components/template/risk-curve-brush/risk-curve-brush.component';
 
 const routes: Routes = [
   {
@@ -32,6 +33,10 @@ const routes: Routes = [
   {
     path: 'scatterBrush',
     component: ScatterBrushComponent,
+  },
+  {
+    path: 'riskCurveBrush',
+    component: RiskCurveBrushComponent,
   },
 ];
 
