@@ -30,7 +30,7 @@ export class ApiService {
     'https://run.mocky.io/v3/c6bef917-48a1-48d9-9565-5c0fea538d43';
 
   riskCurveBrushURL =
-    'https://run.mocky.io/v3/c6bef917-48a1-48d9-9565-5c0fea538d43';
+    'https://run.mocky.io/v3/74cd378b-e49f-4592-98ec-4ae8c71697d3';
 
   constructor(private http: HttpClient) {}
 

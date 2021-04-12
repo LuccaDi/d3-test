@@ -23,7 +23,7 @@ export class RiskCurveBrushComponent implements OnInit {
   private rows = 2;
   private numCharts = 4;
 
-  private eixosX = ['cRocha', 'cRocha', 'cRocha', 'cRocha'];
+  private eixosX = ['cRocha', 'nkrg1', 'nkrog1', 'nkrow1'];
   private eixosY = ['nkrg1', 'nkrog1', 'nkrg1', 'nkrog1'];
 
   private x: any;
@@ -84,7 +84,7 @@ export class RiskCurveBrushComponent implements OnInit {
 
     this.y = d3
       .scaleLinear()
-      .domain([0, 10])
+      .domain([0, 1])
       .range([this.size - this.margin / 2, this.margin / 2]);
 
     this.yAxis = d3
@@ -289,9 +289,9 @@ export class RiskCurveBrushComponent implements OnInit {
 
         return (
           'translate(' +
-          this.x(d[this.eixosX[cont]]) +
+          this.x(d[this.eixosX[cont]].value) +
           ',' +
-          this.y(d[this.eixosY[cont]]) +
+          this.y(d[this.eixosX[cont]].cprob) +
           ')'
         );
       })
@@ -334,7 +334,7 @@ export class RiskCurveBrushComponent implements OnInit {
                   '_groups'
                 ][0][0].attributes.nameX.value;
 
-                return this.x(dada[x]);
+                return this.x(dada[x].value);
               }) // x position of the first end of the line
               .attr('y1', this.y(this.newYScale.domain()[0])) // y position of the first end of the line
               .attr('x2', () => {
@@ -346,7 +346,7 @@ export class RiskCurveBrushComponent implements OnInit {
                   '_groups'
                 ][0][0].attributes.nameX.value;
 
-                return this.x(dada[x]);
+                return this.x(dada[x].value);
               }) // x position of the second end of the line
               .attr('y2', this.y(this.newYScale.domain()[1])); // y position of the second end of the line
 
@@ -363,9 +363,9 @@ export class RiskCurveBrushComponent implements OnInit {
               .attr('y1', () => {
                 y = this.graphs.select(`#graph${graphSelectY++}`)[
                   '_groups'
-                ][0][0].attributes.nameY.value;
+                ][0][0].attributes.nameX.value;
 
-                return this.y(dada[y]);
+                return this.y(dada[y].cprob);
               }) // y position of the first end of the line
               .attr('x2', this.x(this.newXScale.domain()[1])) // x position of the second end of the line
               .attr('y2', () => {
@@ -374,9 +374,9 @@ export class RiskCurveBrushComponent implements OnInit {
                 }
                 y = this.graphs.select(`#graph${graphSelectY++}`)[
                   '_groups'
-                ][0][0].attributes.nameY.value;
+                ][0][0].attributes.nameX.value;
 
-                return this.y(dada[y]);
+                return this.y(dada[y].cprob);
               }); // y position of the second end of the line
           }
         });
